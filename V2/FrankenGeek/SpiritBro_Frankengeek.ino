@@ -16,20 +16,80 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <https://www.gnu.org/licenses/>.
- * * Version: 1.8
- * Date: 6/22/2025
+ *
+ * Date: 7/7/2025
  * Notes: V1.8 - Consolidated Cyclotron and Power Cell LEDs into a single strip.
+ *        V2.0 - Added conditional logic to account for Spirit or FrankenGeek outputs, as well as support V1 and V2 PCBs both.
+ *        V2.1 - 7/7/25 - Cleaned up conditional logic and added overheat pin definition.
+ *        V2.2 - 7/24/25 - Added FG overheat pin assignment.
 */
 
-//LED Size definitions
-#define CYCLOTRON_AL_LED_COUNT_FS 40       //Number of LEDs in ring for AL/FE modes
-#define CYCLOTRON_AL_LED_COUNT_DLX  30  //Number of LEDs in ring for Deluxe (80%) scale packs
+// Set to 1 to enable built-in debug messages
+#define DEBUG 1
+
+// Debug macros
+#if DEBUG == 1
+#define debug(x) Serial.print(x)
+#define debugln(x) Serial.println(x)
+#else
+#define debug(x)
+#define debugln(x)
+#endif
+
+//LED Size definitions for Cyclotrons
+#define CYCLOTRON_AL_LED_COUNT_FS 40    //Number of LEDs in ring for AL/FE modes
+#define CYCLOTRON_AL_LED_COUNT_DLX 30   //Number of LEDs in ring for Deluxe (80%) scale packs
 #define CYCLOTRON_84_LED_COUNT 4        //Defaults to 4 cyclotron LEDs for 84/89 modes
 
 // Define which version you're building - 1984 is 4 LED Cyclotron, and 2021 is a ring
 #define PACK_YEAR 1984  // Change to 2021 for Afterlife version
 #define PACK_SIZE 100   // Change to 80 for 80% scale pack
-#define WAND_MODEL WAND_1984  // Options: WAND_1984, WAND_SPENGLER, WAND_ZAPNBLAST
+
+// Define SpiritBro PCB Revision - Default to SB_V2 to support latest hardware
+#define SB_V1 1
+#define SB_V2 2
+#define SB_VERSION SB_V2
+
+// Define Output PCB Type (Spirit or FrankenGeek)
+// Spirit mode outputs shorter power on/off pulse, and has no output for the overheating pin.
+#define OUTPUT_SPIRIT 1
+#define OUTPUT_FG 2
+#define OUTPUT_MODE OUTPUT_FG //Options OUTPUT_SPIRIT for Spirit PCB or OUTPUT_FG for FrankenGeek
+
+// Define Wand Model Options - For future development and tuning
+#define WAND_TYPE_1984 1
+#define WAND_TYPE_SPENGLER 2
+#define WAND_TYPE_ZAPNBLAST 3
+#define WAND_MODEL WAND_TYPE_1984 // Options: WAND_TYPE_1984, WAND_TYPE_SPENGLER, WAND_TYPE_ZAPNBLAST
+
+// Conditionally define pin assignments based on PCB Revision.
+// V1 PCB has a full size Pi Pico 2040, and the V2+ are based on the WaveShare RP2040 Zero
+#if SB_VERSION == 1
+  #define PACK_LED_PIN 8
+  #define POWERCELL_LED_PIN 9
+  #define POWER_BTN_OUT 6
+  #define FIRE_BTN_OUT 7
+  #define BUILTIN_LED_PIN 25
+#elif SB_VERSION == 2
+  #define OVERHEAT_PIN 9
+  #define PACK_LED_PIN 8
+  #define POWER_BTN_OUT 7
+  #define FIRE_BTN_OUT 6
+  #define BUILTIN_LED_PIN 16
+#else
+  #error "Unsupported SB_VERSION"
+#endif
+
+// Conditionally define  assignments based output selection
+#if OUTPUT_MODE == OUTPUT_SPIRIT
+  #define PWRPULSE_LENGTH 200
+  #define SPIRIT_FIRE false //Set to true if you want the spirt pack to play it's firing audio when the wand is firing.
+#elif OUTPUT_MODE == OUTPUT_FG
+  #define PWRPULSE_LENGTH 300
+  #define SPIRIT_FIRE true //Set to true if you want the spirt pack to play it's firing audio when the wand is firing.
+#else
+  #error "Unsupported OUTPUT_MODE"
+#endif
 
 // Conditionally define LED counts based on pack scale
 #if PACK_SIZE == 100
@@ -53,68 +113,75 @@
   #error "Unsupported PACK_YEAR. Please use 1984 or 2020."
 #endif
 
-// Pin assignments
-#define PACK_LED_PIN 8
-#define RP2040_LED_PIN 16
-#define SPIRIT_POWER_OUT 7
-#define SPIRIT_FIRE_OUT 6
-#define BUILTIN_LED 25
-
-// ======== I2S Audio Pins ========
+// I2S Audio Output PINS for DAC / Amps (Future PCB revisions)
 #define I2S_BCLK 11
 #define I2S_LRCK 12
 #define I2S_DOUT 13
 
+// Main Configuration options
 #define POWERCELL_START_INDEX CYCLOTRON_LED_COUNT
 #define CYCLOTRON_START_INDEX 0
-
 #define CYC_START_SPEED 255 //Speed for cyclotron during boot (max 255 is slowest)
-#define CYC_IDLE_SPEED 10  //Speed for cyclotron during idle, lower number is faster (default 100) 
-#define CYC_84_SPEED 400
-#define CYC_FIRE_SPEED 5   //Speed for cyclotron during firing, lower number is faster (default 25) 
-#define CYC_BOOT_LEN 9000  //Number of milliseconds to fade in cyclotron ring before boot (2.9sec for Hasbro 1984 wand)
-#define BRIGHTNESS 255    // Maximum brightness
+#define CYC_IDLE_SPEED 10   //Speed for cyclotron during idle, lower number is faster (default 100) 
+#define CYC_84_SPEED 400    //Speed for the standard 4-LED Cyclotron to rotate at
+#define CYC_FIRE_SPEED 5    //Speed for cyclotron during firing, lower number is faster (default 25) 
+#define CYC_BOOT_LEN 9000   //Number of milliseconds to fade in cyclotron ring before boot (2.9sec for Hasbro 1984 wand)
+#define BRIGHTNESS 255      //Maximum brightness
 #define CYCLOTRON_TRAIL_FADE 170
 
-//Mode Settings
-#define SPIRIT_FIRE false //Set to true if you want the spirt pack to play it's firing audio when the wand is firing.
+//Conditionally define the wand power-on threshold based on WAND_MODEL
+#if WAND_MODEL == WAND_TYPE_1984 || WAND_MODEL == WAND_TYPE_SPENGLER
+  //const float f_wand_power_on_threshold = 0.65;
+#elif WAND_MODEL == WAND_TYPE_ZAPNBLAST
+ //const float f_wand_power_on_threshold = 0.10;
+#else
+  #error "Unsupported WAND_MODEL. Please use WAND_1984, WAND_SPENGLER, or WAND_ZAPNBLAST."
+#endif
 
-#define DEBUG //Comment this line out to disable debugging via serial
-
-// Status variables
-bool b_afterlifemode = false;   //Determines which version of the cyclotron animation is running. If afterlifemode is true then it assumes a ring LED, otherwise uses 4 LEDs.
-bool b_wand_firing = false;
-bool b_wand_connected = false;
-bool b_wand_on = false;
-bool b_show_power_data = false;
-bool b_cyclotronbooted = false;
-bool ledOn = false;
-
-const uint8_t i_wand_power_level_max = 5; // Max power level of the wand.
-uint8_t i_wand_power_level = 1; // Power level of the wand.
-
-//Import needed libraries
+// Import 3rd-Party Libraries
+#include <Arduino.h>
 #include <millisDelay.h>
 #include <FastLED.h>
 #include <AudioFileSourceID3.h>
 #include <AudioGeneratorWAV.h>
 #include <AudioOutputI2S.h>
 #include <AudioFileSourceLittleFS.h>
-#include <INA219.h>
+
+// Configuration and status variables
+bool b_afterlifemode = false;   //Determines which version of the cyclotron animation is running. If afterlifemode is true then it assumes a ring LED, otherwise uses 4 LEDs.
+bool b_cyclotronbooted = false;
+bool ledOn = false;
+bool b_wand_connected = false;
+bool b_wand_syncing = false;
+bool b_wand_on = false;
+bool b_use_power_meter = true;
+bool b_show_power_data = false;
+bool b_wand_firing = false;
+bool b_firing_intensify = false;
+bool b_overheating = false;
+
+uint8_t i_wand_power_level = 1; // Power level of the wand.
 
 // Boot-up LED animation speeds
 uint32_t intBootSpeed = CYC_START_SPEED;
 uint32_t cyc_boot_interval = CYC_BOOT_LEN / 255; //calculate the delay between ramp up steps (255 steps)
 
+// LED Controllers
+CRGB leds[TOTAL_LED_COUNT];
+CRGB status_led[1]; // For the onboard RP2040 LED
+CRGB picoLEDColor = CRGB::Green;
+
+CLEDController* stripController = nullptr;
+CLEDController* statusController = nullptr;
+
 // LED animation settings
 const uint32_t pwr_interval = 55;      // Interval between powercell climbing steps
 const uint32_t updateInterval = CYC_84_SPEED;   // Interval in milliseconds for LED updates
-uint8_t currentLED = 0;     // LED position tracker
+uint8_t currentCyclotronLED = 0;     // LED position tracker
 uint8_t currentPCellLED = 0;
 uint8_t fadeInterval = 30;  // Interval between fade steps in 84 mode
 uint8_t fadeAmount = 30;    // Amount to fade each time in 84 mode
 uint8_t ringPosition = 0;   //Position of the cyclotron LED ring animation
-
 
 //Status LED blink settings
 uint32_t previousBlinkMillis = 0; // Store last time the LED was updated
@@ -124,18 +191,7 @@ bool statusLedIsOn = false;
 uint32_t previousPicoLEDMillis = 0;
 uint32_t intPicoLEDSpeed = 1000;
 
-// <<< MODIFIED: Single LED array for the entire strip
-CRGB leds[TOTAL_LED_COUNT];
-CRGB status_led[1]; // For the onboard RP2040 LED
-CRGB picoLEDColor = CRGB::Green;
-
-CLEDController* stripController = nullptr;
-CLEDController* statusController = nullptr;
-
-// <<< MODIFIED: Obsolete - FastLED.addLeds is now handled directly in setup()
-// CLEDController &cyclotronController = FastLED.addLeds<NEOPIXEL, PACK_LED_PIN>(pack_leds, CYCLOTRON_LED_COUNT);
-
-//Timers
+//Timer definitions and intialization
 uint32_t currentMillis = 0;
 uint32_t previousMillis = 0;  
 uint32_t currentPCellMillis = 0;
@@ -143,16 +199,19 @@ uint32_t previousPCellMillis = 0;
 uint32_t startMillis = 0;
 uint32_t bootMillis = 0;
 uint32_t fadePreviousMillis = 0;
-millisDelay powerPulseTimer;
 bool isPulsing = false;
 
+millisDelay powerPulseTimer;
+millisDelay ms_delay_post_2;
+millisDelay ms_delay_post_3;
 
-// ======== Audio Setup ========
+//  Audio Playback Setup 
 AudioFileSourceLittleFS *file = nullptr;
 AudioGeneratorWAV *wav = nullptr;
 AudioOutputI2S *out = nullptr;
 AudioFileSource *id3 = nullptr;
 
+// Audio File name and location - Stored in LitteFS partition and uploaded
 const char* audioFiles[] = {
     "/bootup.wav",  
     "/idlehum.wav",
@@ -166,58 +225,10 @@ bool isLooping = false;
 enum PackState { ACTION_IDLE, ACTION_BOOTING, ACTION_POWERDOWN, ACTION_BOOTED, MODE_ON, MODE_OFF, WAND_FIRING, WAND_STOPPED_FIRING };
 enum PackState PACK_STATUS;
 
-// Custom values for calibrating the current-sensing device.
-#define SHUNT_R     0.1  // Shunt resistor in ohms (default: 0.1ohm)
-#define SHUNT_MAX_V 0.2  // Max voltage across shunt (default: 0.2V)
-#define BUS_MAX_V   16.0 // Sets max based on expected range (< 16V)
-#define MAX_CURRENT 2.0  // Sets the expected max amperage draw (2A)
+// Import Additional Local Code (do this after all the variable definitions so they are available)
+#include "PowerMeter.h"
 
-// General Variables
-INA219 monitor; // Power monitor object on i2c bus using the INA219 chip.
-bool b_power_meter_available = false; // Whether a power meter device exists on i2c bus, per setup() -> powerMeterInit()
-const uint16_t f_wand_power_up_delay = 1000; // How long to wait and ignore any wand firing events after initial power-up (ms).
-const float f_ema_alpha = 0.2; // Smoothing factor (<1) for Exponential Moving Average (EMA) [Lower Value = Smoother Averaging].
-
-//Conditionally define the wand power-on threshold based on WAND_MODEL
-#if WAND_MODEL == WAND_1984 || WAND_MODEL == WAND_SPENGLER
-  const float f_wand_power_on_threshold = 0.65;
-#elif WAND_MODEL == WAND_ZAPNBLAST
-  const float f_wand_power_on_threshold = 0.20;
-#else
-  #error "Unsupported WAND_MODEL. Please use WAND_1984, WAND_SPENGLER, or WAND_ZAPNBLAST."
-#endif
-
-// Special Timers and Timeouts
-millisDelay ms_powerup_debounce; // Timer to lock out firing when the wand powers on.
-
-// Define an object which can store
-struct PowerMeter {
-  const static uint16_t StateChangeDuration = 80; // Duration (ms) for a current change to persist for action
-  const static float StateChangeThreshold; // Minimum change in current (A) to consider as a potential state change
-  float ShuntVoltage = 0; // mV - Millivolts read to calculate the amperage draw across the shunt resistor
-  float ShuntCurrent = 0; // A - The current (amperage) reading via the shunt resistor
-  float BusVoltage = 0;   // mV - Voltage reading from the measured device
-  float BattVoltage = 0;  // V - Reference voltage from device power source
-  float BusPower = 0;     // W - Calculation of power based on the bus mV*A values
-  float AmpHours = 0;     // Ah - An estimation of power consumed over regular intervals
-  float RawPower = 0;     // W - Calculation of power based on raw V*A values (non-smoothed)
-  float AvgPower = 0;     // A - Running average from the RawPower value (smoothed)
-  float LastAverage = 0;  // A - Last average used when determining a state change
-  unsigned int PowerReadDelay = (int) (StateChangeDuration / 4); // How often (ms) to read levels for changes
-  unsigned long StateChanged = 0; // Time when a potential state change was detected
-  unsigned long LastRead = 0;     // Used to calculate Ah consumed since battery power-on
-  unsigned long ReadTick = 0;     // Difference of current read time - last read
-  millisDelay ReadTimer;          // Timer for reading latest values from power meter
-};
-
-// Set the static constant for considering a "change" based on latest current reading average.
-// IOW, if we measure a difference of this much since the last average, the user initiated input.
-const float PowerMeter::StateChangeThreshold = 0.2;
-
-// Create instances of the PowerMeter object.
-PowerMeter wandReading;
-
-// ======== Audio Control ========
+// Audio - Stop all playing audio 
 void stopAudio() {
     if (wav && wav->isRunning()) {
         wav->stop();
@@ -228,6 +239,7 @@ void stopAudio() {
     delete file; file = nullptr;
 }
 
+// Audio - Play WAV files
 void playAudioByIndex(int index, bool loop = false) {
     if (index < 0 || index >= NUM_AUDIO_FILES) {
         
@@ -262,13 +274,18 @@ void playAudioByIndex(int index, bool loop = false) {
 //Initial setup of hardware
 void setup() {
 
-  pinMode(SPIRIT_POWER_OUT, OUTPUT);
-  digitalWrite(SPIRIT_POWER_OUT, HIGH);
+  pinMode(POWER_BTN_OUT, OUTPUT);
+  digitalWrite(POWER_BTN_OUT, HIGH);
 
-  pinMode(SPIRIT_FIRE_OUT, OUTPUT);
-  digitalWrite(SPIRIT_FIRE_OUT, HIGH);
+  pinMode(FIRE_BTN_OUT, OUTPUT);
+  digitalWrite(FIRE_BTN_OUT, HIGH);
 
-  pinMode(BUILTIN_LED, OUTPUT);
+  pinMode(OVERHEAT_PIN, OUTPUT);
+  digitalWrite(OVERHEAT_PIN, LOW);  
+
+  #if SB_VERSION == SB_V1
+    pinMode(BUILTIN_LED_PIN, OUTPUT);
+  #endif
 
   Serial.begin(115200);
   while (!Serial && millis() < 2000); // Wait for Serial to connect
@@ -281,66 +298,70 @@ void setup() {
   #endif
 
   #ifdef DEBUG
-    Serial.println("SpiritBro V1.7 - Combined LED Strip - (c) A2ThreeD");
-    Serial.print("Build Year: ");
+    Serial.println("SpiritBro - V2.0 - A2ThreeD 2025");
+    Serial.print("PCB Revision: ");
+    Serial.println(SB_VERSION);
+    Serial.print("Output Mode Selection: ");
+    Serial.println(OUTPUT_MODE);
+    Serial.print("Build Year Selection: ");
     Serial.println(PACK_YEAR);
+    Serial.print("Enable Firing Output: ");
+    Serial.println(SPIRIT_FIRE);
     Serial.print("Cyclotron LED count: ");
     Serial.println(CYCLOTRON_LED_COUNT);
     Serial.print("Power Cell start index: ");
     Serial.println(POWERCELL_START_INDEX);
+    Serial.println("");
   #endif
 
   // Audio Init
   #ifdef DEBUG
-  Serial.println("Setting up audio amp...");
+  Serial.println("Configuring Audio DAC");
   #endif
 
   out = new AudioOutputI2S();
   out->SetPinout(I2S_BCLK, I2S_LRCK, I2S_DOUT);
   out->SetGain(1.0);
 
-  statusController = &FastLED.addLeds<WS2812, RP2040_LED_PIN, RGB>(status_led, 1);
+  #if SB_VERSION == SB_V2
+    statusController = &FastLED.addLeds<WS2812, BUILTIN_LED_PIN, RGB>(status_led, 1);
+  #endif
+
   stripController = &FastLED.addLeds<WS2812, PACK_LED_PIN, GRB>(leds, TOTAL_LED_COUNT);
   FastLED.setBrightness(128);
-
-  //#ifdef DEBUG
-  //Serial.println("Power-On Self-Test: Power Cell LEDs");
-  //#endif
-
-  // Light up Power Cell LEDs white for 2 seconds as self-test
-  //fill_solid(&leds[POWERCELL_START_INDEX], POWERCELL_LED_COUNT, CRGB::Blue);
-  //FastLED.show();
-  //delay(2000);
 
   // Clear LEDs after self-test
   FastLED.clear();
   FastLED.show();
 
-  // Initialize the power metering on the i2c bus
-  powerMeterInit();
+  // Initialize the INA219 current monitor on the i2c bus
+  if(b_use_power_meter) {
+    powerMeterInit();
+  }
 
   //Set the intial pack state
   PACK_STATUS = MODE_OFF;
 }
 
+// Check to see if power on pulse is being processed
 void checkPowerPulse() {
     if (isPulsing && powerPulseTimer.justFinished()) {
-        digitalWrite(SPIRIT_POWER_OUT, HIGH); // End the pulse
+        digitalWrite(POWER_BTN_OUT, HIGH); // End the pulse
         isPulsing = false;
     }
 }
 
-//The main loop of the code for checking wand state and performing actions based on the state
+// MAIN CODE LOOP
 void loop() {
     currentMillis = millis();
 
     // Handle non-blocking power pulse
     checkPowerPulse();
     
-    // 1. Check for wand or switch inputs and update state
+    // Check for wand or switch inputs and update state
     checkPowerMeter();
 
-    // 2. Handle state-specific transitions and audio
+    // Handle state-specific transitions and audio
     switch(PACK_STATUS) {
         case ACTION_IDLE:
             #ifdef DEBUG
@@ -349,18 +370,24 @@ void loop() {
             blinkPicoLED(200, CRGB::Blue);
             break;
         case ACTION_POWERDOWN:
+          
             // We are in this state waiting for the shutdown sound to finish.
             if (!wav || !wav->isRunning()) {
                 #ifdef DEBUG
                 Serial.println("Shutdown sound finished. Pack is now off.");
                 #endif
-                b_cyclotronbooted = false; // Reset boot variable
+
+                // Reset boot variables and indexes
+                b_cyclotronbooted = false; 
+                currentPCellLED = 0;
+                currentCyclotronLED = 0;
+
+                PACK_STATUS = MODE_OFF;    // Transition to the final OFF state
+                sendPowerPulse();
 
                 // Clear LEDs
                 FastLED.clear();
                 FastLED.show();
-
-                PACK_STATUS = MODE_OFF;    // Transition to the final OFF state
             }
             break;
         case ACTION_BOOTING:
@@ -380,9 +407,9 @@ void loop() {
             }
             break;
         case WAND_FIRING:
-            #ifdef DEBUG
-            Serial.println("State: WAND_FIRING");
-            #endif
+            //#ifdef DEBUG
+            //Serial.println("State: WAND_FIRING");
+            //#endif
 
             stopAudio();
             blinkPicoLED(100, CRGB::Red);
@@ -398,22 +425,23 @@ void loop() {
             PACK_STATUS = ACTION_BOOTED; // Immediately transition back to booted
             break;
         case MODE_OFF:
+
             blinkStatusLED();
             blinkPicoLED(intPicoLEDSpeed, CRGB::Green);
             stopAudio();
             break;
     }
 
-    // 3. Update all animations based on the current state
+    // Update all animations based on the current state
     if (PACK_STATUS != MODE_OFF && PACK_STATUS != ACTION_IDLE) {
         cyclotronStates();
         powerCellUpdate();
     }
     
-    // 4. Render all LED changes at once at the end of the loop
+    // Render all LED changes at once at the end of the loop
     FastLED.show();
 
-    // 5. Handle audio processing
+    // Handle audio processing
     if (wav && wav->isRunning() && !wav->loop()) {
         //stopAudio(); // Clean up if audio finished and isn’t looping
     }
@@ -439,32 +467,36 @@ void packShutdown() {
 
     PACK_STATUS = ACTION_POWERDOWN; // Set state to wait for sound
     
-    playAudioByIndex(2, false); // Play shutdown sound (index 2)
-    wandStoppedFiring();
     sendPowerPulse();
-    FastLED.clear(); // Clear LEDs immediately
-    FastLED.show();  // Push the cleared state to the LEDs
+    playAudioByIndex(2, false); // Play shutdown sound (index 2)
   }
+
 }
 
 void sendPowerPulse(){
   if (!isPulsing) {
-      digitalWrite(SPIRIT_POWER_OUT, LOW);
-      powerPulseTimer.start(200);
+      digitalWrite(POWER_BTN_OUT, LOW);
+      powerPulseTimer.start(PWRPULSE_LENGTH);
       isPulsing = true;
   }
 }
 
 void wandFiring(){
   if(SPIRIT_FIRE == true){
-    digitalWrite(SPIRIT_FIRE_OUT, LOW);
+    digitalWrite(FIRE_BTN_OUT, LOW);
   }
   PACK_STATUS = WAND_FIRING;
 }
 
 void wandStoppedFiring(){
+
+    if(PACK_STATUS != ACTION_POWERDOWN && PACK_STATUS != MODE_OFF) {
+      PACK_STATUS = WAND_STOPPED_FIRING;
+    }
+   
     if(SPIRIT_FIRE == true){
-      digitalWrite(SPIRIT_FIRE_OUT, HIGH);
+      //Set the pin high to tell the Spirit pack to stop playing the firing sound
+      digitalWrite(FIRE_BTN_OUT, HIGH);
     }
 }
 
@@ -532,17 +564,17 @@ void cyclotron84Update() {
   if (currentMillis - previousMillis >= updateInterval) {
     previousMillis = currentMillis;
 
-    leds[CYCLOTRON_START_INDEX + currentLED] = CRGB::Red;
-    currentLED++;
-    if (currentLED >= CYCLOTRON_LED_COUNT) {
-      currentLED = 0;
+    leds[CYCLOTRON_START_INDEX + currentCyclotronLED] = CRGB::Red;
+    currentCyclotronLED++;
+    if (currentCyclotronLED >= CYCLOTRON_LED_COUNT) {
+      currentCyclotronLED = 0;
     }
   }
 
   if (currentMillis - fadePreviousMillis >= fadeInterval) {
     fadePreviousMillis = currentMillis;
     for (int i = 0; i < CYCLOTRON_LED_COUNT; i++) {
-      if (i != currentLED) {
+      if (i != currentCyclotronLED) {
         leds[CYCLOTRON_START_INDEX + i].fadeToBlackBy(fadeAmount);
       }
     }
@@ -564,187 +596,40 @@ void powerCellUpdate() {
   }
 }
 
+//Blinking the status LED on the PCB
 void blinkPicoLED(uint32_t intPicoLEDSpeed, CRGB picoLEDColor) {
   unsigned long currentMillis = millis();
+
   if (currentMillis - previousPicoLEDMillis >= intPicoLEDSpeed) {
     previousPicoLEDMillis = currentMillis;
     ledOn = !ledOn;
-    status_led[0] = ledOn ? picoLEDColor : CRGB::Black;
+
+    //Blink the correct LED based on PCB version (Pi Pico has a standard LED and Pi Pico Zero has RGB)
+    if (SB_VERSION == SB_V1) {
+      digitalWrite(BUILTIN_LED_PIN, ledOn ? HIGH : LOW);  
+    } else {
+      status_led[0] = ledOn ? picoLEDColor : CRGB::Black;  
+    }
   }
 }
 
+//Blinking the status LED on the powercell to indicate power is on to the board but the system isn't running.
 void blinkStatusLED() {
 
   unsigned long currentMillis = millis();
   if (!statusLedIsOn && (currentMillis - previousBlinkMillis >= blinkinterval)) {
-    #ifdef DEBUG
-    Serial.println("Status LED on");
-    #endif
+
     previousBlinkMillis = currentMillis;
     leds[POWERCELL_START_INDEX] = CRGB::Blue;
     statusLedIsOn = true;
   }
 
   if (statusLedIsOn && (currentMillis - previousBlinkMillis >= onDuration)) {
-    // <<< MODIFIED: Turn off the first LED of the power cell segment
-   #ifdef DEBUG
-    Serial.println("Status LED off");
-    #endif
 
     leds[POWERCELL_START_INDEX] = CRGB::Black;
     statusLedIsOn = false;
   }
 }
 
-// Configure and calibrate the power meter device.
-void powerMeterConfig() {
-  #ifdef DEBUG
-    Serial.print(F("Configuring Power Meter... "));
-  #endif
-  
-  monitor.configure(INA219::RANGE_16V, INA219::GAIN_1_40MV, INA219::ADC_64SAMP, INA219::ADC_64SAMP, INA219::CONT_SH_BUS);
-  monitor.calibrate(SHUNT_R, SHUNT_MAX_V, BUS_MAX_V, MAX_CURRENT);
-
-}
-
-// Initialize the power meter device on the i2c bus.
-void powerMeterInit() {
-
-    uint8_t i_monitor_status = monitor.begin();
-    
-    #ifdef DEBUG
-      Serial.print(F("Power Meter Result: "));
-      Serial.print(i_monitor_status);
-    #endif
-
-    if (i_monitor_status == 0) {
-      #ifdef DEBUG
-        Serial.println(F(" (Success)"));
-      #endif
-      
-      b_power_meter_available = true;
-      powerMeterConfig();
-      wandReading.LastRead = millis();
-      wandReading.ReadTimer.start(wandReading.PowerReadDelay);
-    }
-    else {
-      #ifdef DEBUG
-        Serial.println(F(" (Failed - Check Wiring)"));
-      #endif
-    } 
-}
-
-// Perform a reading of values from the power meter for the wand.
-void doWandPowerReading() {
-  if (b_power_meter_available) {
-    wandReading.ShuntVoltage = monitor.shuntVoltage();
-    wandReading.ShuntCurrent = monitor.shuntCurrent();
-    wandReading.BusVoltage = monitor.busVoltage();
-    wandReading.BusPower = monitor.busPower();
-
-    wandReading.BattVoltage = wandReading.BusVoltage + wandReading.ShuntVoltage;
-    wandReading.RawPower = wandReading.BattVoltage * wandReading.ShuntCurrent;
-    wandReading.AvgPower = (f_ema_alpha * wandReading.RawPower) + ((1 - f_ema_alpha) * wandReading.AvgPower);
-
-    unsigned long i_new_time = millis();
-    wandReading.ReadTick = i_new_time - wandReading.LastRead;
-    wandReading.AmpHours += (wandReading.ShuntCurrent * wandReading.ReadTick) / 3600000.0;
-    wandReading.LastRead = i_new_time;
-
-    monitor.recalibrate();
-    monitor.reconfig();
-  }
-}
-
-void updateWandPowerState() {
-  const uint8_t POWER_STATE_UPDATE_INTERVAL = 20;
-  static uint8_t si_update;
-  si_update = (si_update + 1) % POWER_STATE_UPDATE_INTERVAL;
-
-  if (!b_wand_connected) {
-    float f_avg_power = wandReading.AvgPower;
-    unsigned long current_time = millis();
-    unsigned long change_time;
-    bool b_state_change_lower = f_avg_power < wandReading.LastAverage - (PowerMeter::StateChangeThreshold * 1.4);
-    bool b_state_change_higher = f_avg_power > wandReading.LastAverage + PowerMeter::StateChangeThreshold;
-
-    if(b_state_change_lower || b_state_change_higher) {
-      if(wandReading.StateChanged == 0) {
-        wandReading.StateChanged = current_time;
-      }
-
-      change_time = current_time - wandReading.StateChanged;
-      if(change_time >= PowerMeter::StateChangeDuration) {
-        wandReading.LastAverage = f_avg_power;
-
-        if(f_avg_power > f_wand_power_on_threshold) {
-          b_wand_on = true;
-          #ifdef DEBUG
-          Serial.println("Wand is powered up");
-          #endif
-          if(PACK_STATUS == MODE_OFF) {
-            packStartup();
-            ms_powerup_debounce.start(f_wand_power_up_delay);
-          }
-        }
-
-        if(b_wand_on && PACK_STATUS != MODE_OFF) {
-          if(b_state_change_higher && !b_wand_firing && ms_powerup_debounce.remaining() < 1) {
-            i_wand_power_level = 5;
-            b_wand_firing = true;
-            PACK_STATUS = WAND_FIRING;
-            wandFiring();
-          }
-
-          if(b_state_change_lower && b_wand_firing) {
-            PACK_STATUS = WAND_STOPPED_FIRING;
-            b_wand_firing = false;
-            wandStoppedFiring();
-          }
-        }
-      }
-    }
-    else {
-      wandReading.StateChanged = 0;
-    }
-    
-    if(f_avg_power <= f_wand_power_on_threshold) {
-      b_wand_on = false;
-
-      if(PACK_STATUS != MODE_OFF && PACK_STATUS != ACTION_POWERDOWN) {
-        packShutdown();
-      }
-
-      wandReading.StateChanged = 0;
-      wandReading.LastAverage = f_avg_power;
-    }
-  }
-  else {
-    wandReading.StateChanged = 0;
-    wandReading.LastAverage = 0;
-  }
-}
 
 
-// Displays the latest gathered power meter values (for debugging only!).
-void wandPowerDisplay() {
-  if(b_power_meter_available && b_show_power_data) {
-     Serial.print("W.Shunt(mV):"); Serial.print(wandReading.ShuntVoltage); Serial.print(",");
-     Serial.print("W.Shunt(A):"); Serial.print(wandReading.ShuntCurrent); Serial.print(",");
-     Serial.print("W.Raw(W):"); Serial.print(wandReading.RawPower); Serial.print(",");
-     Serial.print("W.AvgPow(W):"); Serial.print(wandReading.AvgPower); Serial.print(",");
-     Serial.print("W.State:"); Serial.println(wandReading.LastAverage);
-  }
-}
-
-// Check the available timers for reading power meter data.
-void checkPowerMeter() {
-  if(wandReading.ReadTimer.justFinished()) {
-    if(b_power_meter_available) {
-      doWandPowerReading();
-      wandPowerDisplay();
-      updateWandPowerState();
-      wandReading.ReadTimer.start(wandReading.PowerReadDelay);
-    }
-  }
-}
