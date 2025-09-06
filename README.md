@@ -1,8 +1,5 @@
 A2ThreeD SpiritBro Adapter - Determines the state of a Hasbro 1984/Spengler wand and uses the information to turn on/off a Spirit Life-Size pack electronics
-Version: 1.0
-Date: 4/27/2025
-Notes: Initial version for sending out beta boards.
-   
+
 This code uses code and work derived from the GPStar proton pack source code, re-used according to the GPL license.
 Specifically, it uses modified sections of the PowerMeter.h code and some from the ProtonPack.ino sections.
 See https://github.com/gpstar81/GPStar-proton-pack/blob/v6.0/develop/source/ProtonPack/PowerMeter.h for the original code.
