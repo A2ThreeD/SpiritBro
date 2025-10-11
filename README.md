@@ -13,7 +13,7 @@ Notes about the software/code:
 The code for the main functions of this adapter board are written by me.  However, some code related to handling the states of the Hasbro wand
 are derived from the GPStar proton pack source code, re-used according to the GPL license and with permission from the GPStar developers.
 Specifically, it uses modified sections of the PowerMeter.h code and some from the ProtonPack.ino sections.
-See https://github.com/gpstar81/GPStar-proton-pack/blob/v6.0/develop/source/ProtonPack/PowerMeter.h for the original code.
+See https://github.com/gpstar81/GPStar-proton-pack/tree/main/source/ProtonPack/include for their original code.
  
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
