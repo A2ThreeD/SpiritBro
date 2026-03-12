@@ -28,7 +28,7 @@
 */
 
 // Set code version
-#define CODE_VERSION 1.04
+#define CODE_VERSION 1.03
 
 // Set to 1 to enable built-in debug messages
 #define DEBUG 1
