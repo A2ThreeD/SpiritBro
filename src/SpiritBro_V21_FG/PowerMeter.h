@@ -171,7 +171,7 @@ void updateWandPowerState() {
   if (b_wand_firing && !b_wand_overheated && ms_delay_post_2.justFinished()) {
     DEBUG_PRINTLN(">>>> TIMER FINISHED: TRANSITIONING TO OVERHEAT STATE");
     b_wand_overheated = true;
-    b_skip_next_power_on_pulse = true; //Added in version 1.04
+    b_skip_next_power_on_pulse = true; // The FG pack restarts itself after venting, so don't toggle power on the next wand startup.
     // Immediately start the 2.5 second alarm timer.
     ms_delay_post_2.start(i_wand_overheat_duration); 
   }
@@ -187,7 +187,7 @@ void updateWandPowerState() {
       wandStoppedFiring();
       b_wand_firing = false; 
       b_wand_overheated = false; // Transition out of the overheat state
-      b_skip_next_power_on_pulse = true; //Added in version 1.04
+      b_skip_next_power_on_pulse = true; // Preserve the skip flag until the wand is powered on again.
     }
     
     // Allow manual power-off to break out of the overheat state
@@ -219,11 +219,13 @@ void updateWandPowerState() {
           b_wand_just_started = true;
           ms_delay_post_3.start(i_wand_startup_delay);
 
-      // Only start the pack if we’re not skipping due to an overheat recovery
+      // After an FG overheat, the pack may already have restarted itself. In that case,
+      // resume firmware boot tracking without sending another power toggle pulse.
       if (PACK_STATUS == MODE_OFF) {
         if (b_skip_next_power_on_pulse) {
-          DEBUG_PRINTLN("Skipping power pulse due to overheat recovery.");
+          DEBUG_PRINTLN("FG overheat recovery: pack already restarted, skipping startup pulse.");
           b_skip_next_power_on_pulse = false; // Clear flag so next time behaves normally
+          packStartup(false);
         } else {
           packStartup();
         }
