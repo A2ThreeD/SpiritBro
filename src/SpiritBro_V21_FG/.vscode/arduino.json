@@ -1,0 +1,22 @@
+{
+  "port": "/dev/cu.usbmodem11101",
+  "configuration": "flash=2097152_0,freq=133,opt=Small,rtti=Disabled,stackprotect=Disabled,exceptions=Disabled,dbgport=Disabled,dbglvl=None,usbstack=picosdk,ipbtstack=ipv4only,uploadmethod=default",
+  "output": "build",
+  "board": "rp2040:rp2040:waveshare_rp2040_zero",
+  "programmer": "",
+  "useProgrammer": false,
+  "optimize_for_debug": false,
+  "configurationRequired": true,
+  "compile_profile": "profile-1756019801793",
+  "monitorPortSettings": {
+    "settings": {
+      "port": "UF2 Board",
+      "baudRate": 115200,
+      "lineEnding": "\r\n",
+      "dataBits": 8,
+      "parity": "none",
+      "stopBits": "one"
+    },
+    "profile_name": ""
+  }
+}

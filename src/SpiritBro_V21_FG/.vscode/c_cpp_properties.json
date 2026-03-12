@@ -1,0 +1,130 @@
+{ 
+        "configurations": [
+          {
+            "name": "Mac",
+            "includePath": [
+              "${workspaceFolder}/**",
+              "${workspaceFolder}/.vscode/include/**",
+              "/Users/morrisaaron/Documents/Arduino/hardware/**",
+              "/Users/morrisaaron/Documents/Arduino/libraries/**",
+              "/Users/morrisaaron/Documents/Arduino/SpiritBro_V21_FG/**",
+              "${env:HOME}/.arduino15/packages/**",
+              "${env:HOME}/Library/Arduino15/packages/**",
+              "/Users/morrisaaron/Library/Arduino15/packages/**"
+            ],
+            "defines": [
+              "ARDUINO=10805",
+              "ARDUINO_ARCH_RP2040",
+              "PICO="
+            ],
+            "macFrameworkPath": [
+              "/System/Library/Frameworks",
+              "/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "macos-clang-x64",
+            "browse": {
+              "path": [
+                "${workspaceFolder}/**",
+                "/Users/morrisaaron/Documents/Arduino/hardware",
+                "/Users/morrisaaron/Documents/Arduino/libraries",
+                "${env:HOME}/.arduino15/packages",
+                "${env:HOME}/Library/Arduino15/packages",
+                "/Users/morrisaaron/Library/Arduino15/packages"
+              ],
+              "limitSymbolsToIncludedHeaders": true
+            }
+          },
+          {
+            "name": "Arduino",
+            "includePath": [
+              "/Users/morrisaaron/Documents/Arduino/libraries/**",
+              "/Users/morrisaaron/Documents/Arduino/SpiritBro_FG_Universal/**",
+              "/Users/morrisaaron/Documents/Arduino/SpiritBro_FG_Universal/build/core/**"
+            ],
+            "forcedInclude": [],
+            "compilerPath": "/Users/morrisaaron/Library/Arduino15/packages/rp2040/tools/pqt-gcc/4.0.1-8ec9d6f/bin/arm-none-eabi-g++",
+            "compilerArgs": [
+              "/Users/morrisaaron/Library/Arduino15/packages/rp2040/tools/pqt-gcc/4.0.1-8ec9d6f/bin/arm-none-eabi-g++",
+              "-I",
+              "/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/cores/rp2040",
+              "-c",
+              "-Werror=return-type",
+              "-Wno-psabi",
+              "-DUSBD_PID=0x0003",
+              "-DUSBD_VID=0x2e8a",
+              "-DUSBD_MAX_POWER_MA=500",
+              "-DUSB_MANUFACTURER=\"Waveshare\"",
+              "-DUSB_PRODUCT=\"RP2040 Zero\"",
+              "-DLWIP_IPV6=0",
+              "-DLWIP_IPV4=1",
+              "-DLWIP_IGMP=1",
+              "-DLWIP_CHECKSUM_CTRL_PER_NETIF=1",
+              "-DARDUINO_VARIANT=\"waveshare_rp2040_zero\"",
+              "-DPICO_FLASH_SIZE_BYTES=2097152",
+              "@/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/lib/rp2040/platform_def.txt",
+              "-march=armv6-m",
+              "-mcpu=cortex-m0plus",
+              "-mthumb",
+              "-ffunction-sections",
+              "-fdata-sections",
+              "-fno-exceptions",
+              "-MMD",
+              "-iprefix/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/",
+              "@/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/lib/rp2040/platform_inc.txt",
+              "@/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/lib/core_inc.txt",
+              "-I/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/include",
+              "-fno-rtti",
+              "-std=gnu++17",
+              "-g",
+              "-pipe",
+              "-DF_CPU=133000000L",
+              "-DARDUINO=10607",
+              "-DARDUINO_WAVESHARE_RP2040_ZERO",
+              "-DBOARD_NAME=\"WAVESHARE_RP2040_ZERO\"",
+              "-DARDUINO_ARCH_RP2040",
+              "-Os",
+              "-DWIFICC=CYW43_COUNTRY_WORLDWIDE",
+              "-I/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/cores/rp2040",
+              "-I/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/variants/waveshare_rp2040_zero",
+              "-I/Users/morrisaaron/Documents/Arduino/libraries/SafeString/src",
+              "-I/Users/morrisaaron/Documents/Arduino/libraries/FastLED/src",
+              "-I/Users/morrisaaron/Documents/Arduino/libraries/Switch/src",
+              "-I/Users/morrisaaron/Documents/Arduino/libraries/ArduinoINA219-master",
+              "-I/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/4.1.1/libraries/Wire/src",
+              "/Users/morrisaaron/Documents/Arduino/SpiritBro_FG_Universal/build/sketch/SpiritBro_FG_Universal.ino.cpp",
+              "-o",
+              "/Users/morrisaaron/Documents/Arduino/SpiritBro_FG_Universal/build/sketch/SpiritBro_FG_Universal.ino.cpp.o"
+            ],
+            "defines": [
+              "USBD_PID=0x0003",
+              "USBD_VID=0x2e8a",
+              "USBD_MAX_POWER_MA=500",
+              "USB_MANUFACTURER=\"Waveshare\"",
+              "USB_PRODUCT=\"RP2040",
+              "LWIP_IPV6=0",
+              "LWIP_IPV4=1",
+              "LWIP_IGMP=1",
+              "LWIP_CHECKSUM_CTRL_PER_NETIF=1",
+              "ARDUINO_VARIANT=\"waveshare_rp2040_zero\"",
+              "PICO_FLASH_SIZE_BYTES=2097152",
+              "F_CPU=133000000L",
+              "ARDUINO=10607",
+              "ARDUINO_WAVESHARE_RP2040_ZERO",
+              "BOARD_NAME=\"WAVESHARE_RP2040_ZERO\"",
+              "ARDUINO_ARCH_RP2040",
+              "WIFICC=CYW43_COUNTRY_WORLDWIDE",
+              "USB_MANUFACTURER=\\\"Waveshare\\\"\"",
+              "USB_PRODUCT=\\\"RP2040",
+              "ARDUINO_VARIANT=\\\"waveshare_rp2040_zero\\\"\"",
+              "BOARD_NAME=\\\"WAVESHARE_RP2040_ZERO\\\"\"",
+              "USBCON"
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++17"
+          }
+        ],
+        "version": 4
+      }
