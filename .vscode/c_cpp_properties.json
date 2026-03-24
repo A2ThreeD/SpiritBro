@@ -1,0 +1,29 @@
+{
+  "configurations": [
+    {
+      "name": "SpiritBro RP2040",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/vendor/millisDelay/src",
+        "/Users/morrisaaron/Documents/Arduino/libraries/**",
+        "/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/5.3.0/include/rp2040",
+        "/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/5.3.0/cores/rp2040",
+        "/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/5.3.0/variants/**",
+        "/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/5.3.0/libraries/**",
+        "/Users/morrisaaron/Library/Arduino15/packages/rp2040/hardware/rp2040/5.3.0/pico-sdk/**"
+      ],
+      "defines": [
+        "ARDUINO=10607",
+        "ARDUINO_ARCH_RP2040",
+        "ARDUINO_RASPBERRY_PI_PICO",
+        "F_CPU=133000000L",
+        "USBCON"
+      ],
+      "compilerPath": "/usr/bin/clang++",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "macos-clang-arm64"
+    }
+  ],
+  "version": 4
+}

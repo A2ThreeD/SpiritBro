@@ -17,6 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <https://www.gnu.org/licenses/>.
  *
+ * Libraries Used:
+ * - millisDelay by Anson Hex https://github.com/gpstar81/millisDelay
+ * - FastLED by Daniel Garcia
+ * - INA219 https://github.com/flav1972/ArduinoINA219
+ * 
+ * 
+ * 
  * Code Name: Spirit Bro - FrankenGeek Universal
  * Description: For SpiritBro boards V1, V2, and V2.2 to use with FrankenGeek electronics.
  * Date: 8/17/2025
@@ -86,7 +93,7 @@
 #endif
 
 // Import 3rd-Party Libraries
-#include <millisDelay.h>
+#include "../../vendor/millisDelay/src/millisDelay.h"
 #include <FastLED.h>
 #include <avdweb_Switch.h>
 
@@ -455,5 +462,4 @@ void buttonPressHandler() {
       }
     }  
 }
-
 
