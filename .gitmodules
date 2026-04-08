@@ -1,0 +1,3 @@
+[submodule "vendor/millisDelay"]
+	path = vendor/millisDelay
+	url = https://github.com/gpstar81/millisDelay

@@ -17,18 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, see <https://www.gnu.org/licenses/>.
  *
+ * Libraries Used:
+ * - millisDelay by Anson Hex https://github.com/gpstar81/millisDelay
+ * - FastLED by Daniel Garcia
+ * - INA219 https://github.com/flav1972/ArduinoINA219
+ * 
+ * 
+ * 
  * Code Name: Spirit Bro - FrankenGeek Universal
  * Description: For SpiritBro boards V1, V2, and V2.2 to use with FrankenGeek electronics.
  * Date: 8/17/2025
  * Notes: V1.0 - First version of universal code, and splitting into versions for Spirit and Frankengeek board.
  *        V1.01 - Added code to handle the function button input and create a basic menu system for Spirit packs. Long press disables wand shutdown. Short press shuts down pack or starts it. Double-click turns on/off spirit firing sounds.
  *        V1.02 - 8/23/25 - Adjusted code to handle FrankenGeek electronics.
- *        V1.03 - 9/9/25 - Set Function Button pin initial state to high.
- *        V1.04 - 10/13/25 - Added fix to not have the next wand startup after an overheat to send power pulse.
+ *        V1.03 - 9/9/25 - Set Function Button pin initial state to high. Added FG overheat recovery handling so the next wand startup resumes tracking without sending another power pulse.
 */
 
 // Set code version
-#define CODE_VERSION 1.04
+#define CODE_VERSION 1.03
 
 // Set to 1 to enable built-in debug messages
 #define DEBUG 1
@@ -87,7 +93,7 @@
 #endif
 
 // Import 3rd-Party Libraries
-#include <millisDelay.h>
+#include "../../vendor/millisDelay/src/millisDelay.h"
 #include <FastLED.h>
 #include <avdweb_Switch.h>
 
@@ -107,7 +113,9 @@ bool b_wand_on = false;
 bool b_use_power_meter = true;
 bool b_show_power_data = false;
 bool b_wand_firing = false;
-bool b_skip_next_power_on_pulse; // Added in V1.04
+// After an FG overheat cycle, the pack restarts itself. The next wand startup should
+// re-enter the firmware boot state without toggling the pack power input again.
+bool b_skip_next_power_on_pulse = false;
 
 bool musicMode = false;
 bool firingSoundEnabled = true;
@@ -170,7 +178,7 @@ void setup() {
   while (!Serial && millis() < 2000); // Wait for Serial to connect
   #endif
 
-  DEBUG_PRINTLN("SpiritBro FrankenGeek Universal Firmware V2.1 Board - V1.04 - A2ThreeD 2025");
+  DEBUG_PRINTLN("SpiritBro FrankenGeek Universal Firmware V2.1 Board - V1.03 - A2ThreeD 2026");
   DEBUG_PRINT("PCB Revision: ");
   DEBUG_PRINTLN(SB_VERSION);
   DEBUG_PRINT("Output Mode Selection: ");
@@ -270,12 +278,15 @@ void loop() {
     FastLED.show();
 }
 
-void packStartup() {
+void packStartup(bool sendPowerOnPulse = true) {
   PACK_STATUS = MODE_BOOTING;
-  DEBUG_PRINTLN("Powering up pack");
 
-  //Send power on pulse
-  sendPowerPulse();
+  if (sendPowerOnPulse) {
+    DEBUG_PRINTLN("Powering up pack");
+    sendPowerPulse();
+  } else {
+    DEBUG_PRINTLN("Resuming pack tracking after FG overheat restart");
+  }
   
   // Start the startup timer
   packStartupTimer = millis();
@@ -451,7 +462,4 @@ void buttonPressHandler() {
       }
     }  
 }
-
-
-
 

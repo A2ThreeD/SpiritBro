@@ -83,7 +83,7 @@
 #endif
 
 // Import 3rd-Party Libraries
-#include <millisDelay.h>
+#include "../../vendor/millisDelay/src/millisDelay.h"
 #include <FastLED.h>
 #include <avdweb_Switch.h>
 #include <EEPROM.h>
@@ -443,5 +443,4 @@ void saveSettings() {
 void loadSettings() {
   spiritFireSoundEnabled = EEPROM.read(ADDR_SPIRIT_FIRE_SOUND);
 }
-
 
